@@ -180,7 +180,7 @@ function isIterableNumber(iterable: any): iterable is Iterable<number> {
       return false;
     }
   }
-  return true;
+  return true; // test git commit
 }
 
 export function from(iterable: Iterable<number>): NumberQueryable;
