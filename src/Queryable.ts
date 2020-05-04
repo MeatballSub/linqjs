@@ -2,14 +2,17 @@ interface Iterable<T> {
   [Symbol.iterator](): Iterator<T>;
 }
 
+type QueryableType<T> = NumberQueryable | Queryable<T>;
+
 interface Queryable<T> extends Iterable<T> {
-  filter(predicate: (value: T, index: number) => boolean): Queryable<T>;
-  map<U>(selector: (value: T, index: number) => U): Queryable<U>;
+  filter(predicate: (value: T, index: number) => boolean): QueryableType<T>;
+  //map<U>(selector: (value: T, index: number) => U): QueryableType<U>;
+  map<U>(selector: (value: T, index: number) => U): QueryableType<U>;
   join<U, R>(
     inner: Iterable<U>,
     predicate: (outer: T, inner: U) => boolean,
     selector: (outer: T, inner: U) => R
-  ): Queryable<R>;
+  ): QueryableType<R>;
   reduce(reducer: (accumulator: T, current: T, index: number) => T): T;
   reduce(
     initialValue: T,
@@ -43,7 +46,9 @@ class QueryProvider<T> implements Queryable<T> {
     yield* this.iterable;
   }
 
-  filter = (predicate: (value: T, index: number) => boolean): Queryable<T> => {
+  filter = (
+    predicate: (value: T, index: number) => boolean
+  ): QueryableType<T> => {
     const self = this;
     let index = 0;
 
@@ -57,10 +62,10 @@ class QueryProvider<T> implements Queryable<T> {
       }
     };
 
-    return new QueryProvider(iterable);
+    return from(iterable);
   };
 
-  map = <U>(selector: (value: T, index: number) => U): Queryable<U> => {
+  map = <U>(selector: (value: T, index: number) => U): QueryableType<U> => {
     const self = this;
     let index = 0;
 
@@ -72,14 +77,14 @@ class QueryProvider<T> implements Queryable<T> {
       }
     };
 
-    return new QueryProvider(iterable);
+    return from(iterable);
   };
 
   join = <U, R>(
     inner: Iterable<U>,
     predicate: (outer: T, inner: U) => boolean,
     selector: (outer: T, inner: U) => R
-  ): Queryable<R> => {
+  ): QueryableType<R> => {
     const self = this;
 
     const iterable = {
@@ -94,7 +99,7 @@ class QueryProvider<T> implements Queryable<T> {
       }
     };
 
-    return new QueryProvider<R>(iterable);
+    return from<R>(iterable);
   };
 
   reduce = <U = T>(
@@ -180,12 +185,12 @@ function isIterableNumber(iterable: any): iterable is Iterable<number> {
       return false;
     }
   }
-  return true; // test git commit
+  return true;
 }
 
 export function from(iterable: Iterable<number>): NumberQueryable;
 export function from<T>(iterable: Iterable<T>): Queryable<T>;
-export function from<T>(iterable: Iterable<T>): Queryable<T> | NumberQueryable {
+export function from<T>(iterable: Iterable<T>): QueryableType<T> {
   if (isIterableNumber(iterable)) {
     return new NumberQueryProvider(iterable);
   } else {
